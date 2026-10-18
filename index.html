@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Parametric & Trigonometric Art Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0b0f17;
+      color: #f3f4f6;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    canvas {
+      touch-action: none;
+    }
+    .glass-panel {
+      background: rgba(17, 24, 39, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+  </style>
+</head>
+<body class="flex flex-col md:flex-row h-screen w-screen select-none">
+
+  <!-- Main Viewport Canvas -->
+  <div class="relative flex-1 h-full w-full bg-slate-950 overflow-hidden">
+    <canvas id="artCanvas" class="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+
+    <!-- Top Toolbar -->
+    <div class="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none z-10">
+      <div class="glass-panel px-4 py-2 rounded-xl flex items-center gap-3 pointer-events-auto shadow-lg">
+        <svg class="w-5 h-5 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>
+        <span class="font-bold text-sm tracking-wide bg-gradient-to-r from-indigo-400 to-pink-400 bg-clip-text text-transparent">
+          Parametric Studio
+        </span>
+      </div>
+
+      <div class="glass-panel p-1.5 rounded-xl flex items-center gap-1 pointer-events-auto shadow-lg">
+        <button id="resetViewBtn" title="Reset View" class="p-2 hover:bg-white/10 rounded-lg text-slate-300 hover:text-white transition">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        </button>
+        <button id="zoomInBtn" title="Zoom In" class="p-2 hover:bg-white/10 rounded-lg text-slate-300 hover:text-white transition">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </button>
+        <button id="zoomOutBtn" title="Zoom Out" class="p-2 hover:bg-white/10 rounded-lg text-slate-300 hover:text-white transition">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </button>
+        <div class="w-px h-4 bg-white/10 mx-1"></div>
+        <button id="exportPngBtn" class="px-3 py-1.5 bg-indigo-600/80 hover:bg-indigo-600 text-xs font-medium text-white rounded-lg transition flex items-center gap-1.5 shadow">
+          PNG
+        </button>
+        <button id="exportSvgBtn" class="px-3 py-1.5 bg-pink-600/80 hover:bg-pink-600 text-xs font-medium text-white rounded-lg transition flex items-center gap-1.5 shadow">
+          SVG
+        </button>
+      </div>
+    </div>
+
+    <!-- Tracer Controls -->
+    <div class="absolute bottom-6 left-4 glass-panel p-2 rounded-xl flex items-center gap-2 pointer-events-auto shadow-lg z-10">
+      <button id="playBtn" class="p-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white transition flex items-center justify-center">
+        <span id="playIcon">▶</span>
+      </button>
+      <div class="flex flex-col gap-0.5">
+        <span class="text-[10px] text-slate-400 font-semibold px-1">ANIMATION TRACER</span>
+        <input type="range" id="animProgress" min="0" max="1" step="0.001" value="1" class="w-28 md:w-36 accent-indigo-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar Panel -->
+  <div id="sidebar" class="glass-panel w-full md:w-96 h-[50vh] md:h-full flex flex-col border-t md:border-t-0 md:border-l border-white/10 z-20">
+    <div class="p-4 border-b border-white/10 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <svg class="w-4 h-4 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        <h2 class="font-semibold text-sm text-slate-200">Lines & Formulas</h2>
+        <span id="layerCountBadge" class="text-xs px-2 py-0.5 bg-indigo-500/20 text-indigo-300 rounded-full border border-indigo-500/30">0</span>
+      </div>
+      <button id="addLineBtn" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg flex items-center gap-1 transition shadow">
+        + Add Line
+      </button>
+    </div>
+
+    <!-- Presets Selector -->
+    <div class="p-3 border-b border-white/10 bg-slate-900/40">
+      <label class="text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-1.5 block">Preset Gallery</label>
+      <select id="presetSelect" class="w-full bg-slate-800 border border-white/10 text-xs rounded-lg p-2 text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+        <option value="rabbit">Parametric Rabbit</option>
+        <option value="cat">Parametric Cat Head</option>
+        <option value="heart">Parametric Heart Shape</option>
+        <option value="butterfly">Fay's Butterfly Curve</option>
+        <option value="mandala">Harmonic Vector Mandala</option>
+      </select>
+    </div>
+
+    <!-- Dynamic Layers Stack -->
+    <div id="layersList" class="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar"></div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('artCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    let state = {
+      scale: 1,
+      offsetX: 0,
+      offsetY: 0,
+      isDragging: false,
+      dragStart: { x: 0, y: 0 },
+      isAnimating: false,
+      animProgress: 1,
+      animSpeed: 0.005,
+      animFrame: null,
+      layers: []
+    };
+
+    const MathContext = {
+      sin: Math.sin, cos: Math.cos, tan: Math.tan,
+      asin: Math.asin, acos: Math.acos, atan: Math.atan, atan2: Math.atan2,
+      abs: Math.abs, sqrt: Math.sqrt, pow: Math.pow, exp: Math.exp, log: Math.log,
+      floor: Math.floor, ceil: Math.ceil, round: Math.round,
+      PI: Math.PI, E: Math.E
+    };
+
+    function safeEval(expr, t) {
+      try {
+        const sanitized = expr
+          .replace(/sin/g, 'MathContext.sin')
+          .replace(/cos/g, 'MathContext.cos')
+          .replace(/tan/g, 'MathContext.tan')
+          .replace(/abs/g, 'MathContext.abs')
+          .replace(/sqrt/g, 'MathContext.sqrt')
+          .replace(/pow/g, 'MathContext.pow')
+          .replace(/exp/g, 'MathContext.exp')
+          .replace(/PI/g, 'MathContext.PI');
+        return new Function('t', 'MathContext', `return ${sanitized};`)(t, MathContext);
+      } catch (e) {
+        return 0;
+      }
+    }
+
+    const Presets = {
+      rabbit: [
+        { name: "Body & Head", exprX: "120 * cos(t) - 30 * cos(2*t)", exprY: "150 * sin(t) - 20 * sin(2*t)", tMin: 0, tMax: 6.283, steps: 500, color: "#ec4899", width: 3, opacity: 0.9, visible: true },
+        { name: "Left Ear", exprX: "-40 + 25 * cos(t) + 15 * sin(3*t)", exprY: "-160 + 130 * sin(t) - 40 * cos(2*t)", tMin: 0, tMax: 3.1415, steps: 300, color: "#a855f7", width: 3.5, opacity: 0.95, visible: true },
+        { name: "Right Ear", exprX: "40 + 25 * cos(t) - 15 * sin(3*t)", exprY: "-160 + 130 * sin(t) - 40 * cos(2*t)", tMin: 0, tMax: 3.1415, steps: 300, color: "#a855f7", width: 3.5, opacity: 0.95, visible: true },
+        { name: "Whiskers", exprX: "70 * sin(4*t) * cos(t)", exprY: "20 + 20 * sin(8*t)", tMin: 0, tMax: 6.283, steps: 400, color: "#38bdf8", width: 1.8, opacity: 0.8, visible: true }
+      ],
+      cat: [
+        { name: "Cat Head Outline", exprX: "(120 + 20*cos(2*t) - 15*cos(4*t)) * cos(t)", exprY: "(120 + 35*sin(t)*sin(t) - 25*cos(2*t)) * sin(t)", tMin: 0, tMax: 6.283, steps: 600, color: "#f59e0b", width: 3, opacity: 0.9, visible: true },
+        { name: "Left Ear Tip", exprX: "-60 + 20 * sin(3*t)", exprY: "-120 - 40 * cos(2*t)", tMin: 0, tMax: 3.1415, steps: 200, color: "#f43f5e", width: 2.5, opacity: 0.9, visible: true },
+        { name: "Right Ear Tip", exprX: "60 - 20 * sin(3*t)", exprY: "-120 - 40 * cos(2*t)", tMin: 0, tMax: 3.1415, steps: 200, color: "#f43f5e", width: 2.5, opacity: 0.9, visible: true },
+        { name: "Cat Whiskers", exprX: "130 * sin(2*t) * cos(t)", exprY: "15 + 15 * sin(6*t)", tMin: 0, tMax: 6.283, steps: 400, color: "#38bdf8", width: 1.5, opacity: 0.8, visible: true }
+      ],
+      heart: [
+        { name: "Heart Silhouette", exprX: "16 * pow(sin(t), 3) * 10", exprY: "-(13 * cos(t) - 5 * cos(2*t) - 2 * cos(3*t) - cos(4*t)) * 10", tMin: 0, tMax: 6.283, steps: 600, color: "#f43f5e", width: 3.5, opacity: 0.95, visible: true },
+        { name: "Inner Glow Resonance", exprX: "12 * pow(sin(t), 3) * 10", exprY: "-(10 * cos(t) - 4 * cos(2*t) - 1.5 * cos(3*t) - cos(4*t)) * 10", tMin: 0, tMax: 6.283, steps: 600, color: "#fb7185", width: 1.5, opacity: 0.6, visible: true }
+      ],
+      butterfly: [
+        { name: "Butterfly Curve", exprX: "sin(t) * (exp(cos(t)) - 2*cos(4*t) - pow(sin(t/12), 5)) * 70", exprY: "-cos(t) * (exp(cos(t)) - 2*cos(4*t) - pow(sin(t/12), 5)) * 70", tMin: 0, tMax: 75.398, steps: 2500, color: "#38bdf8", width: 2, opacity: 0.85, visible: true }
+      ],
+      mandala: [
+        { name: "Outer Petal Ring", exprX: "(180 + 40 * cos(6*t)) * cos(t)", exprY: "(180 + 40 * cos(6*t)) * sin(t)", tMin: 0, tMax: 6.283, steps: 600, color: "#6366f1", width: 2.5, opacity: 0.9, visible: true },
+        { name: "Inner Core", exprX: "(90 + 30 * sin(12*t)) * cos(t)", exprY: "(90 + 30 * sin(12*t)) * sin(t)", tMin: 0, tMax: 6.283, steps: 600, color: "#a855f7", width: 2, opacity: 0.85, visible: true }
+      ]
+    };
+
+    function resizeCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width * window.devicePixelRatio;
+      canvas.height = rect.height * window.devicePixelRatio;
+      render();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function render() {
+      ctx.save();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const cx = canvas.width / 2 + state.offsetX;
+      const cy = canvas.height / 2 + state.offsetY;
+
+      ctx.translate(cx, cy);
+      ctx.scale(state.scale * window.devicePixelRatio, state.scale * window.devicePixelRatio);
+
+      drawGrid();
+
+      state.layers.forEach((layer) => {
+        if (!layer.visible) return;
+
+        const totalSteps = Math.floor(layer.steps * state.animProgress);
+        if (totalSteps < 2) return;
+
+        const dt = (layer.tMax - layer.tMin) / layer.steps;
+
+        ctx.beginPath();
+        let first = true;
+        let lastX = 0, lastY = 0;
+
+        for (let i = 0; i <= totalSteps; i++) {
+          const t = layer.tMin + i * dt;
+          const x = safeEval(layer.exprX, t);
+          const y = safeEval(layer.exprY, t);
+
+          if (isNaN(x) || isNaN(y)) continue;
+
+          if (first) {
+            ctx.moveTo(x, y);
+            first = false;
+          } else {
+            ctx.lineTo(x, y);
+          }
+          lastX = x;
+          lastY = y;
+        }
+
+        ctx.globalAlpha = layer.opacity;
+        ctx.strokeStyle = layer.color;
+        ctx.lineWidth = layer.width;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.stroke();
+
+        if (state.animProgress < 1 && !first) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(lastX, lastY, layer.width * 2, 0, Math.PI * 2);
+          ctx.fillStyle = '#ffffff';
+          ctx.shadowColor = layer.color;
+          ctx.shadowBlur = 10;
+          ctx.fill();
+          ctx.restore();
+        }
+      });
+
+      ctx.restore();
+    }
+
+    function drawGrid() {
+      ctx.save();
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
+      ctx.lineWidth = 1 / state.scale;
+      const gridSize = 50, extent = 2000;
+
+      ctx.beginPath();
+      for (let x = -extent; x <= extent; x += gridSize) {
+        ctx.moveTo(x, -extent); ctx.lineTo(x, extent);
+      }
+      for (let y = -extent; y <= extent; y += gridSize) {
+        ctx.moveTo(-extent, y); ctx.lineTo(extent, y);
+      }
+      ctx.stroke();
+
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+      ctx.beginPath();
+      ctx.moveTo(-extent, 0); ctx.lineTo(extent, 0);
+      ctx.moveTo(0, -extent); ctx.lineTo(0, extent);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function createLayerUI(layer, index) {
+      const div = document.createElement('div');
+      div.className = 'glass-panel p-3 rounded-xl flex flex-col gap-2 relative border border-white/10 text-xs';
+
+      div.innerHTML = `
+        <div class="flex items-center justify-between gap-2 border-b border-white/10 pb-2">
+          <div class="flex items-center gap-2 flex-1">
+            <button class="toggle-visible text-slate-400 hover:text-white transition font-bold">
+              ${layer.visible ? '👁' : '🙈'}
+            </button>
+            <input type="text" class="layer-name bg-transparent font-medium text-slate-200 focus:outline-none focus:bg-slate-800/50 rounded px-1 w-full" value="${layer.name}">
+          </div>
+          <div class="flex items-center gap-1">
+            <input type="color" class="layer-color w-6 h-6 rounded cursor-pointer border-0 bg-transparent" value="${layer.color}">
+            <button class="delete-layer text-slate-500 hover:text-red-400 transition px-1 font-bold">✕</button>
+          </div>
+        </div>
+
+        <div class="space-y-2 pt-1">
+          <div>
+            <label class="text-[10px] text-slate-400 font-mono">X(t) =</label>
+            <input type="text" class="expr-x w-full bg-slate-900/80 border border-white/10 rounded p-1.5 font-mono text-indigo-300 focus:outline-none focus:ring-1 focus:ring-indigo-500" value="${layer.exprX}">
+          </div>
+          <div>
+            <label class="text-[10px] text-slate-400 font-mono">Y(t) =</label>
+            <input type="text" class="expr-y w-full bg-slate-900/80 border border-white/10 rounded p-1.5 font-mono text-indigo-300 focus:outline-none focus:ring-1 focus:ring-indigo-500" value="${layer.exprY}">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <div>
+            <label class="text-[10px] text-slate-400">t Range Min / Max</label>
+            <div class="flex items-center gap-1">
+              <input type="number" step="0.1" class="t-min w-full bg-slate-900/80 border border-white/10 rounded p-1 font-mono text-slate-300" value="${layer.tMin}">
+              <input type="number" step="0.1" class="t-max w-full bg-slate-900/80 border border-white/10 rounded p-1 font-mono text-slate-300" value="${layer.tMax}">
+            </div>
+          </div>
+          <div>
+            <label class="text-[10px] text-slate-400">Thickness / Steps</label>
+            <div class="flex items-center gap-1">
+              <input type="number" min="0.5" max="20" step="0.5" class="layer-width w-full bg-slate-900/80 border border-white/10 rounded p-1 font-mono text-slate-300" value="${layer.width}">
+              <input type="number" min="50" max="5000" step="50" class="layer-steps w-full bg-slate-900/80 border border-white/10 rounded p-1 font-mono text-slate-300" value="${layer.steps}">
+            </div>
+          </div>
+        </div>
+      `;
+
+      div.querySelector('.toggle-visible').addEventListener('click', () => {
+        layer.visible = !layer.visible;
+        updateLayersList();
+        render();
+      });
+
+      div.querySelector('.delete-layer').addEventListener('click', () => {
+        state.layers.splice(index, 1);
+        updateLayersList();
+        render();
+      });
+
+      div.querySelector('.layer-name').addEventListener('input', (e) => layer.name = e.target.value);
+      div.querySelector('.layer-color').addEventListener('input', (e) => { layer.color = e.target.value; render(); });
+      div.querySelector('.expr-x').addEventListener('input', (e) => { layer.exprX = e.target.value; render(); });
+      div.querySelector('.expr-y').addEventListener('input', (e) => { layer.exprY = e.target.value; render(); });
+      div.querySelector('.t-min').addEventListener('input', (e) => { layer.tMin = parseFloat(e.target.value) || 0; render(); });
+      div.querySelector('.t-max').addEventListener('input', (e) => { layer.tMax = parseFloat(e.target.value) || 6.28; render(); });
+      div.querySelector('.layer-width').addEventListener('input', (e) => { layer.width = parseFloat(e.target.value) || 2; render(); });
+      div.querySelector('.layer-steps').addEventListener('input', (e) => { layer.steps = parseInt(e.target.value) || 500; render(); });
+
+      return div;
+    }
+
+    function updateLayersList() {
+      const container = document.getElementById('layersList');
+      container.innerHTML = '';
+      state.layers.forEach((layer, index) => {
+        container.appendChild(createLayerUI(layer, index));
+      });
+      document.getElementById('layerCountBadge').innerText = state.layers.length;
+    }
+
+    function loadPreset(key) {
+      if (Presets[key]) {
+        state.layers = JSON.parse(JSON.stringify(Presets[key]));
+        updateLayersList();
+        render();
+      }
+    }
+
+    function animate() {
+      if (!state.isAnimating) return;
+      state.animProgress += state.animSpeed;
+      if (state.animProgress >= 1) {
+        state.animProgress = 1;
+        state.isAnimating = false;
+        document.getElementById('playIcon').innerText = '▶';
+      }
+      document.getElementById('animProgress').value = state.animProgress;
+      render();
+      if (state.isAnimating) {
+        state.animFrame = requestAnimationFrame(animate);
+      }
+    }
+
+    document.getElementById('playBtn').addEventListener('click', () => {
+      state.isAnimating = !state.isAnimating;
+      if (state.isAnimating) {
+        if (state.animProgress >= 1) state.animProgress = 0;
+        document.getElementById('playIcon').innerText = '❚❚';
+        animate();
+      } else {
+        document.getElementById('playIcon').innerText = '▶';
+        cancelAnimationFrame(state.animFrame);
+      }
+    });
+
+    document.getElementById('animProgress').addEventListener('input', (e) => {
+      state.animProgress = parseFloat(e.target.value);
+      render();
+    });
+
+    // Touch & Mouse Interaction
+    canvas.addEventListener('mousedown', (e) => {
+      state.isDragging = true;
+      state.dragStart = { x: e.clientX - state.offsetX, y: e.clientY - state.offsetY };
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!state.isDragging) return;
+      state.offsetX = e.clientX - state.dragStart.x;
+      state.offsetY = e.clientY - state.dragStart.y;
+      render();
+    });
+
+    window.addEventListener('mouseup', () => state.isDragging = false);
+
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      state.scale *= e.deltaY < 0 ? 1.1 : 0.9;
+      render();
+    }, { passive: false });
+
+    canvas.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        state.isDragging = true;
+        state.dragStart = { x: e.touches[0].clientX - state.offsetX, y: e.touches[0].clientY - state.offsetY };
+      }
+    });
+
+    canvas.addEventListener('touchmove', (e) => {
+      if (state.isDragging && e.touches.length === 1) {
+        state.offsetX = e.touches[0].clientX - state.dragStart.x;
+        state.offsetY = e.touches[0].clientY - state.dragStart.y;
+        render();
+      }
+    });
+
+    canvas.addEventListener('touchend', () => state.isDragging = false);
+
+    document.getElementById('zoomInBtn').addEventListener('click', () => { state.scale *= 1.2; render(); });
+    document.getElementById('zoomOutBtn').addEventListener('click', () => { state.scale /= 1.2; render(); });
+    document.getElementById('resetViewBtn').addEventListener('click', () => {
+      state.scale = 1; state.offsetX = 0; state.offsetY = 0; render();
+    });
+
+    document.getElementById('presetSelect').addEventListener('change', (e) => loadPreset(e.target.value));
+
+    document.getElementById('addLineBtn').addEventListener('click', () => {
+      state.layers.push({
+        name: `Line ${state.layers.length + 1}`,
+        exprX: "150 * cos(t)",
+        exprY: "150 * sin(t)",
+        tMin: 0, tMax: 6.283, steps: 500,
+        color: "#38bdf8", width: 2, opacity: 0.9, visible: true
+      });
+      updateLayersList();
+      render();
+    });
+
+    document.getElementById('exportPngBtn').addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.download = 'parametric-art.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
+
+    document.getElementById('exportSvgBtn').addEventListener('click', () => {
+      let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${canvas.width} ${canvas.height}" style="background:#0b0f17">`;
+      const cx = canvas.width / 2 + state.offsetX;
+      const cy = canvas.height / 2 + state.offsetY;
+
+      state.layers.forEach(layer => {
+        if (!layer.visible) return;
+        let d = "";
+        const dt = (layer.tMax - layer.tMin) / layer.steps;
+        for (let i = 0; i <= layer.steps; i++) {
+          const t = layer.tMin + i * dt;
+          const x = cx + safeEval(layer.exprX, t) * state.scale;
+          const y = cy + safeEval(layer.exprY, t) * state.scale;
+          if (isNaN(x) || isNaN(y)) continue;
+          d += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
+        }
+        svg += `<path d="${d}" stroke="${layer.color}" stroke-width="${layer.width}" opacity="${layer.opacity}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+      });
+
+      svg += `</svg>`;
+
+      const blob = new Blob([svg], { type: 'image/svg+xml' });
+      const link = document.createElement('a');
+      link.download = 'parametric-art.svg';
+      link.href = URL.createObjectURL(blob);
+      link.click();
+    });
+
+    resizeCanvas();
+    loadPreset('rabbit');
+  </script>
+</body>
+</html>
